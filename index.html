@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>個人財務管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh}
+.header{background:#fff;border-bottom:1px solid #e5e3dc;padding:0 1.5rem;position:sticky;top:0;z-index:100}
+.header-inner{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:1rem;height:52px}
+.header h1{font-size:16px;font-weight:600;flex:1}
+.nav{display:flex;gap:2px}
+.nav-btn{padding:6px 14px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:#666;border-radius:6px}
+.nav-btn.active{background:#1a1a1a;color:#fff}
+.nav-btn:hover:not(.active){background:#f0ede8}
+.main{max-width:760px;margin:0 auto;padding:1.5rem}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border:1px solid #e5e3dc;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem}
+.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem}
+.metric-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.metric{background:#f8f7f3;border-radius:8px;padding:.875rem 1rem}
+.metric-label{font-size:12px;color:#888;margin-bottom:3px}
+.metric-value{font-size:18px;font-weight:600;color:#1a1a1a}
+.negative{color:#c0392b}.positive{color:#1a7a4a}.warning{color:#b7791f}
+.row{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap}
+.row:last-child{margin-bottom:0}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:11px;color:#888;padding-left:2px}
+input,select{height:36px;padding:0 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f3;color:#1a1a1a;font-size:13px;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:#1a1a1a;background:#fff}
+input[type=number]{text-align:right}
+.btn{height:36px;padding:0 14px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;font-size:13px;cursor:pointer;white-space:nowrap;font-family:inherit;font-weight:500}
+.btn:hover{background:#f0ede8}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-primary:hover{background:#333;border-color:#333}
+.btn-sm{height:28px;padding:0 10px;font-size:12px}
+.btn-danger{border-color:#f5c6c6;color:#c0392b}
+.btn-danger:hover{background:#fdf0f0}
+.chip{padding:5px 14px;border:1px solid #ddd;border-radius:99px;font-size:13px;cursor:pointer;background:#fff;color:#666;font-family:inherit}
+.chip.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.chip:hover:not(.active){background:#f0ede8}
+.chip-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+.divider{border:none;border-top:1px solid #e5e3dc;margin:1rem 0}
+.tab-inner{display:flex;gap:4px;margin-bottom:1rem}
+.tab-inner button{padding:4px 12px;font-size:12px;border:1px solid #ddd;border-radius:99px;background:#fff;color:#666;cursor:pointer;font-family:inherit}
+.tab-inner button.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.type-toggle{display:flex;gap:6px;margin-bottom:10px}
+.type-btn{flex:1;height:34px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#666;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500}
+.type-btn.active-borrow{background:#fdf0ec;color:#8b2500;border-color:#e8956d}
+.type-btn.active-repay{background:#edf7f0;color:#1a5c37;border-color:#6abf8a}
+.cat-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;margin-top:4px}
+.cat-name{font-size:14px;font-weight:600}
+.item-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #e5e3dc;border-radius:8px;margin-bottom:6px}
+.item-row:hover{border-color:#ccc}
+.item-name{flex:1;font-size:14px}
+.item-input{width:90px;height:28px;padding:0 8px;font-size:13px}
+.add-row{display:flex;gap:6px;margin-top:8px}
+.add-row input{flex:1;height:32px}
+.progress-bar{height:4px;background:#ede9e3;border-radius:2px;overflow:hidden;margin:4px 0 6px}
+.progress-fill{height:100%;border-radius:2px;transition:width .3s}
+.tx-table{width:100%;border-collapse:collapse;font-size:13px}
+.tx-table th{font-size:11px;font-weight:600;color:#888;text-align:left;padding:6px 8px;border-bottom:1px solid #e5e3dc}
+.tx-table td{padding:8px 8px;border-bottom:1px solid #f0ede8;vertical-align:middle}
+.tx-table tr:last-child td{border-bottom:none}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600}
+.badge-borrow{background:#fdf0ec;color:#8b2500}
+.badge-repay{background:#edf7f0;color:#1a5c37}
+.loan-progress{height:6px;background:#ede9e3;border-radius:3px;overflow:hidden;margin:6px 0 3px}
+.loan-progress-fill{height:100%;border-radius:3px;transition:width .4s}
+.progress-labels{display:flex;justify-content:space-between;font-size:11px;color:#888}
+.empty{text-align:center;padding:2rem;color:#bbb;font-size:13px}
+@media(max-width:600px){
+  .metric-grid{grid-template-columns:repeat(2,1fr)}
+  .nav-btn{padding:6px 10px;font-size:12px}
+  .row{flex-wrap:wrap}
+  .tx-table{font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <h1>💰 個人財務管理</h1>
+    <nav class="nav">
+      <button class="nav-btn active" onclick="switchNav('income',this)">收入分配</button>
+      <button class="nav-btn" onclick="switchNav('expense',this)">支出記錄</button>
+      <button class="nav-btn" onclick="switchNav('loan',this)">貸款追蹤</button>
+    </nav>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ===== 收入分配 ===== -->
+<div id="panel-income" class="panel active">
+  <div class="card">
+    <div class="card-title">本月收入</div>
+    <div class="row">
+      <input type="number" id="income-input" placeholder="輸入月收入（元）" style="flex:1" />
+      <button class="btn btn-primary" onclick="setIncome()">確認</button>
+    </div>
+  </div>
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">月收入</div><div class="metric-value" id="s-income">—</div></div>
+    <div class="metric"><div class="metric-label">已分配</div><div class="metric-value" id="s-alloc">—</div></div>
+    <div class="metric"><div class="metric-label">未分配</div><div class="metric-value" id="s-remain">—</div></div>
+  </div>
+  <div class="card">
+    <div class="tab-inner">
+      <button class="active" onclick="switchAlloc('daily',this)">日常支出</button>
+      <button onclick="switchAlloc('project',this)">專案支出</button>
+    </div>
+    <div id="alloc-daily"></div>
+    <div id="alloc-project" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ===== 支出記錄 ===== -->
+<div id="panel-expense" class="panel">
+  <div class="card">
+    <div class="card-title">新增支出</div>
+    <div class="row">
+      <div class="field"><label>日期</label><input type="date" id="tx-date" style="width:140px" /></div>
+      <div class="field" style="flex:1"><label>類別</label><select id="tx-cat"></select></div>
+      <div class="field"><label>金額</label><input type="number" id="tx-amount" placeholder="0" style="width:100px" /></div>
+    </div>
+    <div class="row">
+      <input type="text" id="tx-note" placeholder="備註（選填）" style="flex:1" />
+      <button class="btn btn-primary" onclick="addTx()">記錄</button>
+    </div>
+  </div>
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">本月支出</div><div class="metric-value negative" id="tx-total">—</div></div>
+    <div class="metric"><div class="metric-label">筆數</div><div class="metric-value" id="tx-count">—</div></div>
+    <div class="metric"><div class="metric-label">平均每筆</div><div class="metric-value" id="tx-avg">—</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">支出明細</div>
+    <div id="tx-list"></div>
+  </div>
+</div>
+
+<!-- ===== 貸款追蹤 ===== -->
+<div id="panel-loan" class="panel">
+  <div class="card">
+    <div class="card-title">貸款帳戶</div>
+    <div class="chip-bar" id="loan-chips"><span style="font-size:13px;color:#bbb">尚無帳戶</span></div>
+    <hr class="divider">
+    <div class="card-title">新增帳戶</div>
+    <div class="row">
+      <div class="field" style="flex:1"><label>帳戶名稱</label><input type="text" id="ln-name" placeholder="如：房貸理財帳戶" /></div>
+      <div class="field"><label>信用額度（選填）</label><input type="number" id="ln-limit" placeholder="0" style="width:150px" /></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>年利率 %（選填）</label><input type="number" id="ln-rate" placeholder="0.00" step="0.01" style="width:150px" /></div>
+      <div class="field"><label>目前已借餘額</label><input type="number" id="ln-balance" placeholder="0" style="width:150px" /></div>
+      <button class="btn btn-primary" onclick="addLoan()" style="align-self:flex-end">新增帳戶</button>
+    </div>
+  </div>
+  <div class="card" id="action-card">
+    <div class="card-title" id="action-title">選擇帳戶後記錄動帳</div>
+    <div id="action-area" style="color:#bbb;font-size:13px">請先新增貸款帳戶</div>
+  </div>
+  <div class="card" id="summary-card" style="display:none">
+    <div class="card-title">帳戶狀況</div>
+    <div class="metric-grid" id="summary-metrics"></div>
+    <div id="usage-bar"></div>
+  </div>
+  <div class="card" id="history-card" style="display:none">
+    <div class="card-title">動帳明細</div>
+    <div id="loan-tx-list"></div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ── 資料結構 ──
+const COLORS=['#1D9E75','#185FA5','#D85A30','#D4537E','#BA7517','#639922','#7F77DD'];
+let S = loadState();
+
+function defaultState(){
+  return {
+    income: 0,
+    daily: { categories: [
+      { id:'d1', name:'固定支出', color:COLORS[0], items:[{id:'i1',name:'房貸',amount:0},{id:'i2',name:'保險',amount:0}] },
+      { id:'d2', name:'生活費',  color:COLORS[1], items:[{id:'i3',name:'餐費',amount:0},{id:'i4',name:'交通',amount:0},{id:'i5',name:'日用品',amount:0}] }
+    ]},
+    project: { categories: [
+      { id:'p1', name:'儲蓄投資', color:COLORS[4], items:[{id:'i6',name:'緊急備用金',amount:0},{id:'i7',name:'投資',amount:0}] },
+      { id:'p2', name:'目標計畫', color:COLORS[5], items:[{id:'i8',name:'旅遊',amount:0},{id:'i9',name:'進修',amount:0}] }
+    ]},
+    txs: [],
+    loans: [],
+    activeLoanId: null
+  };
+}
+
+function loadState(){
+  try{ const d=localStorage.getItem('finance_v1'); return d?JSON.parse(d):defaultState(); }
+  catch(e){ return defaultState(); }
+}
+function save(){ localStorage.setItem('finance_v1', JSON.stringify(S)); }
+function fmt(n){ return '$'+Math.round(Number(n)||0).toLocaleString(); }
+
+// ── 頁籤 ──
+function switchNav(key, btn){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+key).classList.add('active');
+}
+
+// ── 收入分配 ──
+function totalAlloc(){
+  let t=0;
+  ['daily','project'].forEach(k=>S[k].categories.forEach(c=>c.items.forEach(i=>t+=Number(i.amount)||0)));
+  return t;
+}
+function updateSummary(){
+  const a=totalAlloc(), r=S.income-a;
+  document.getElementById('s-income').textContent = S.income ? fmt(S.income) : '—';
+  document.getElementById('s-alloc').textContent  = S.income ? fmt(a) : '—';
+  const el=document.getElementById('s-remain');
+  if(S.income){
+    el.textContent = fmt(Math.abs(r));
+    el.className = 'metric-value'+(r<0?' negative':r>0?' positive':'');
+    if(r<0) el.textContent = '-'+fmt(Math.abs(r));
+  } else { el.textContent='—'; el.className='metric-value'; }
+}
+function renderAlloc(key){
+  const wrap=document.getElementById('alloc-'+key);
+  let html='';
+  S[key].categories.forEach(cat=>{
+    const tot=cat.items.reduce((s,i)=>s+(Number(i.amount)||0),0);
+    const pct=S.income?Math.min(100,Math.round(tot/S.income*100)):0;
+    html+=`<div class="cat-header">
+      <span class="cat-name">${cat.name}</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-size:13px;color:#888">${tot?fmt(tot):''}</span>
+        <button class="btn btn-sm btn-danger" onclick="delCat('${key}','${cat.id}')">刪除分類</button>
+      </div></div>`;
+    cat.items.forEach(item=>{
+      html+=`<div class="item-row">
+        <span class="item-name">${item.name}</span>
+        <input class="item-input" type="number" placeholder="0" value="${item.amount||''}"
+          oninput="setAmt('${key}','${cat.id}','${item.id}',this.value)" />
+        <button class="btn btn-sm btn-danger" onclick="delItem('${key}','${cat.id}','${item.id}')">✕</button>
+      </div>`;
+    });
+    if(S.income&&tot>0) html+=`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${cat.color}"></div></div>`;
+    html+=`<div class="add-row">
+      <input type="text" placeholder="新增項目" id="ni-${cat.id}" onkeydown="if(event.key==='Enter')addItem('${key}','${cat.id}')" />
+      <button class="btn btn-sm" onclick="addItem('${key}','${cat.id}')">+ 新增</button>
+    </div><div style="margin-bottom:1rem"></div>`;
+  });
+  html+=`<div style="border-top:1px solid #e5e3dc;padding-top:.875rem">
+    <div class="add-row">
+      <input type="text" placeholder="新增分類名稱" id="nc-${key}" onkeydown="if(event.key==='Enter')addCat('${key}')" />
+      <button class="btn btn-sm" onclick="addCat('${key}')">+ 新增分類</button>
+    </div></div>`;
+  wrap.innerHTML=html;
+}
+function setIncome(){
+  const v=document.getElementById('income-input').value; if(!v)return;
+  S.income=Number(v); save(); renderAlloc('daily'); renderAlloc('project'); updateSummary();
+}
+function setAmt(key,cid,iid,v){
+  S[key].categories.find(c=>c.id===cid).items.find(i=>i.id===iid).amount=Number(v)||0;
+  save(); updateSummary(); renderAlloc(key);
+}
+function addItem(key,cid){
+  const inp=document.getElementById('ni-'+cid); const name=inp.value.trim(); if(!name)return;
+  S[key].categories.find(c=>c.id===cid).items.push({id:'i'+Date.now(),name,amount:0});
+  save(); renderAlloc(key); updateSummary(); refreshCatSelect();
+}
+function delItem(key,cid,iid){
+  S[key].categories.find(c=>c.id===cid).items=S[key].categories.find(c=>c.id===cid).items.filter(i=>i.id!==iid);
+  save(); renderAlloc(key); updateSummary(); refreshCatSelect();
+}
+function addCat(key){
+  const inp=document.getElementById('nc-'+key); const name=inp.value.trim(); if(!name)return;
+  S[key].categories.push({id:'c'+Date.now(),name,color:COLORS[S[key].categories.length%COLORS.length],items:[]});
+  save(); renderAlloc(key); refreshCatSelect();
+}
+function delCat(key,cid){
+  S[key].categories=S[key].categories.filter(c=>c.id!==cid);
+  save(); renderAlloc(key); updateSummary(); refreshCatSelect();
+}
+function switchAlloc(key,btn){
+  document.querySelectorAll('.tab-inner button').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  ['daily','project'].forEach(k=>{document.getElementById('alloc-'+k).style.display=k===key?'block':'none';});
+}
+
+// ── 支出記錄 ──
+function allItems(){
+  let items=[];
+  ['daily','project'].forEach(k=>S[k].categories.forEach(c=>c.items.forEach(i=>items.push({label:`${c.name} › ${i.name}`,id:i.id}))));
+  return items;
+}
+function refreshCatSelect(){
+  const sel=document.getElementById('tx-cat');
+  const items=allItems();
+  sel.innerHTML=items.map(i=>`<option value="${i.id}">${i.label}</option>`).join('')+'<option value="other">其他</option>';
+}
+function addTx(){
+  const date=document.getElementById('tx-date').value;
+  const catId=document.getElementById('tx-cat').value;
+  const amount=Number(document.getElementById('tx-amount').value);
+  const note=document.getElementById('tx-note').value.trim();
+  if(!date||!amount)return;
+  const catLabel=document.getElementById('tx-cat').selectedOptions[0].text;
+  S.txs.unshift({id:'t'+Date.now(),date,catId,catLabel,amount,note});
+  document.getElementById('tx-amount').value=''; document.getElementById('tx-note').value='';
+  save(); renderTxs();
+}
+function delTx(id){ S.txs=S.txs.filter(t=>t.id!==id); save(); renderTxs(); }
+function renderTxs(){
+  const el=document.getElementById('tx-list');
+  if(!S.txs.length){ el.innerHTML='<div class="empty">尚無記錄</div>'; updateTxSummary(); return; }
+  el.innerHTML=`<table class="tx-table">
+    <thead><tr><th>日期</th><th>備註</th><th>類別</th><th style="text-align:right">金額</th><th></th></tr></thead>
+    <tbody>${S.txs.map(t=>`<tr>
+      <td style="color:#888;white-space:nowrap">${t.date.slice(5)}</td>
+      <td>${t.note||'—'}</td>
+      <td style="font-size:12px;color:#888">${t.catLabel}</td>
+      <td style="text-align:right;font-weight:600;color:#c0392b">-${fmt(t.amount)}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="delTx('${t.id}')" style="padding:0;width:28px;text-align:center">✕</button></td>
+    </tr>`).join('')}</tbody></table>`;
+  updateTxSummary();
+}
+function updateTxSummary(){
+  const total=S.txs.reduce((s,t)=>s+t.amount,0), count=S.txs.length;
+  document.getElementById('tx-total').textContent = count?fmt(total):'—';
+  document.getElementById('tx-count').textContent = count?count+'筆':'—';
+  document.getElementById('tx-avg').textContent   = count?fmt(total/count):'—';
+}
+
+// ── 貸款追蹤 ──
+let txType='repay';
+function getLoan(){ return S.loans.find(l=>l.id===S.activeLoanId); }
+
+function addLoan(){
+  const name=document.getElementById('ln-name').value.trim();
+  const limit=Number(document.getElementById('ln-limit').value)||0;
+  const rate=Number(document.getElementById('ln-rate').value)||0;
+  const balance=Number(document.getElementById('ln-balance').value)||0;
+  if(!name)return;
+  const loan={id:'l'+Date.now(),name,limit,rate,balance,color:COLORS[S.loans.length%COLORS.length],txs:[]};
+  if(balance>0) loan.txs.push({id:'t0',date:new Date().toISOString().slice(0,10),type:'borrow',amount:balance,principal:balance,interest:0,balanceAfter:balance,note:'初始餘額'});
+  S.loans.push(loan);
+  ['ln-name','ln-limit','ln-rate','ln-balance'].forEach(id=>document.getElementById(id).value='');
+  S.activeLoanId=loan.id; save(); renderLoanUI();
+}
+function selectLoan(id){ S.activeLoanId=id; save(); renderLoanUI(); }
+function delLoan(id){
+  S.loans=S.loans.filter(l=>l.id!==id);
+  S.activeLoanId=S.loans.length?S.loans[0].id:null;
+  save(); renderLoanUI();
+}
+function setLoanTxType(t){
+  txType=t;
+  document.getElementById('ltbtn-repay').className='type-btn'+(t==='repay'?' active-repay':'');
+  document.getElementById('ltbtn-borrow').className='type-btn'+(t==='borrow'?' active-borrow':'');
+  document.getElementById('repay-fields').style.display=t==='repay'?'flex':'none';
+  document.getElementById('borrow-fields').style.display=t==='borrow'?'flex':'none';
+}
+function renderLoanChips(){
+  const el=document.getElementById('loan-chips');
+  if(!S.loans.length){ el.innerHTML='<span style="font-size:13px;color:#bbb">尚無帳戶</span>'; return; }
+  el.innerHTML=S.loans.map(l=>`<button class="chip${S.activeLoanId===l.id?' active':''}" onclick="selectLoan('${l.id}')">${l.name}</button>`).join('')+
+    (S.activeLoanId?`<button class="btn btn-sm btn-danger" onclick="delLoan('${S.activeLoanId}')">刪除帳戶</button>`:'');
+}
+function renderActionArea(){
+  const loan=getLoan();
+  document.getElementById('action-title').textContent=loan?`${loan.name} — 記錄動帳`:'選擇帳戶後記錄動帳';
+  const el=document.getElementById('action-area');
+  if(!loan){ el.innerHTML='<span style="color:#bbb;font-size:13px">請先新增貸款帳戶</span>'; return; }
+  el.innerHTML=`
+    <div class="type-toggle">
+      <button id="ltbtn-repay" class="type-btn active-repay" onclick="setLoanTxType('repay')">還款</button>
+      <button id="ltbtn-borrow" class="type-btn" onclick="setLoanTxType('borrow')">借出</button>
+    </div>
+    <div class="row">
+      <div class="field"><label>日期</label><input type="date" id="ltx-date" value="${new Date().toISOString().slice(0,10)}" style="width:140px" /></div>
+      <div id="repay-fields" style="display:flex;gap:8px;flex:1;align-items:flex-end;flex-wrap:wrap">
+        <div class="field"><label>還本金</label><input type="number" id="ltx-principal" placeholder="0" style="width:110px" /></div>
+        <div class="field"><label>利息</label><input type="number" id="ltx-interest" placeholder="0" style="width:100px" /></div>
+        <div class="field" style="flex:1"><label>備註（選填）</label><input type="text" id="ltx-note" placeholder="" /></div>
+      </div>
+      <div id="borrow-fields" style="display:none;gap:8px;flex:1;align-items:flex-end;flex-wrap:wrap">
+        <div class="field"><label>借出金額</label><input type="number" id="ltx-borrow-amt" placeholder="0" style="width:130px" /></div>
+        <div class="field" style="flex:1"><label>備註（選填）</label><input type="text" id="ltx-borrow-note" placeholder="" /></div>
+      </div>
+      <button class="btn btn-primary" onclick="addLoanTx()" style="align-self:flex-end">記錄</button>
+    </div>`;
+  txType='repay';
+}
+function addLoanTx(){
+  const loan=getLoan(); if(!loan)return;
+  const date=document.getElementById('ltx-date').value; if(!date)return;
+  let tx;
+  if(txType==='repay'){
+    const principal=Number(document.getElementById('ltx-principal').value)||0;
+    const interest=Number(document.getElementById('ltx-interest').value)||0;
+    const note=document.getElementById('ltx-note').value.trim();
+    if(!principal&&!interest)return;
+    const balanceAfter=Math.max(0,loan.balance-principal);
+    tx={id:'t'+Date.now(),date,type:'repay',amount:principal+interest,principal,interest,balanceAfter,note};
+    loan.balance=balanceAfter;
+  } else {
+    const amount=Number(document.getElementById('ltx-borrow-amt').value)||0;
+    const note=document.getElementById('ltx-borrow-note').value.trim();
+    if(!amount)return;
+    const balanceAfter=loan.balance+amount;
+    tx={id:'t'+Date.now(),date,type:'borrow',amount,principal:amount,interest:0,balanceAfter,note};
+    loan.balance=balanceAfter;
+  }
+  loan.txs.unshift(tx);
+  save(); renderLoanUI();
+}
+function delLoanTx(tid){
+  const loan=getLoan(); if(!loan)return;
+  loan.txs=loan.txs.filter(t=>t.id!==tid);
+  const sorted=[...loan.txs].reverse();
+  let bal=0;
+  sorted.forEach(t=>{ if(t.type==='borrow'){bal+=t.principal;}else{bal=Math.max(0,bal-t.principal);} t.balanceAfter=bal; });
+  loan.balance=sorted.length?sorted[sorted.length-1].balanceAfter:0;
+  loan.txs=sorted.reverse();
+  save(); renderLoanUI();
+}
+function renderLoanSummary(){
+  const loan=getLoan();
+  const card=document.getElementById('summary-card');
+  if(!loan){card.style.display='none';return;}
+  card.style.display='block';
+  const usagePct=loan.limit?Math.min(100,Math.round(loan.balance/loan.limit*100)):0;
+  const totalPrincipalRepaid=loan.txs.filter(t=>t.type==='repay').reduce((s,t)=>s+t.principal,0);
+  const totalInterestPaid=loan.txs.filter(t=>t.type==='repay').reduce((s,t)=>s+t.interest,0);
+  const totalBorrowed=loan.txs.filter(t=>t.type==='borrow').reduce((s,t)=>s+t.amount,0);
+  document.getElementById('summary-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">目前餘額（欠款）</div><div class="metric-value negative">${fmt(loan.balance)}</div></div>
+    <div class="metric"><div class="metric-label">可用額度</div><div class="metric-value positive">${loan.limit?fmt(loan.limit-loan.balance):'—'}</div></div>
+    <div class="metric"><div class="metric-label">年利率</div><div class="metric-value">${loan.rate?loan.rate+'%':'—'}</div></div>
+    <div class="metric"><div class="metric-label">累計借出</div><div class="metric-value">${fmt(totalBorrowed)}</div></div>
+    <div class="metric"><div class="metric-label">累計還本金</div><div class="metric-value positive">${fmt(totalPrincipalRepaid)}</div></div>
+    <div class="metric"><div class="metric-label">累計付利息</div><div class="metric-value negative">${fmt(totalInterestPaid)}</div></div>`;
+  document.getElementById('usage-bar').innerHTML=loan.limit?`
+    <div class="loan-progress"><div class="loan-progress-fill" style="width:${usagePct}%;background:${usagePct>80?'#D85A30':usagePct>50?'#BA7517':'#1D9E75'}"></div></div>
+    <div class="progress-labels"><span>已用 ${fmt(loan.balance)}</span><span>${usagePct}%</span><span>額度 ${fmt(loan.limit)}</span></div>`:'';
+}
+function renderLoanHistory(){
+  const loan=getLoan();
+  const card=document.getElementById('history-card');
+  if(!loan){card.style.display='none';return;}
+  card.style.display='block';
+  const el=document.getElementById('loan-tx-list');
+  if(!loan.txs.length){el.innerHTML='<div class="empty">尚無動帳記錄</div>';return;}
+  el.innerHTML=`<table class="tx-table">
+    <thead><tr><th>日期</th><th>類型</th><th style="text-align:right">還本金</th><th style="text-align:right">利息</th><th style="text-align:right">合計</th><th style="text-align:right">帳戶餘額</th><th>備註</th><th></th></tr></thead>
+    <tbody>${loan.txs.map(t=>`<tr>
+      <td style="color:#888;white-space:nowrap">${t.date.slice(5)}</td>
+      <td><span class="badge ${t.type==='borrow'?'badge-borrow':'badge-repay'}">${t.type==='borrow'?'借出':'還款'}</span></td>
+      <td style="text-align:right">${t.type==='repay'?fmt(t.principal):'—'}</td>
+      <td style="text-align:right;color:#c0392b">${t.interest>0?fmt(t.interest):'—'}</td>
+      <td style="text-align:right;font-weight:600;${t.type==='borrow'?'color:#c0392b':'color:#1a7a4a'}">${t.type==='borrow'?'+':'-'}${fmt(t.amount)}</td>
+      <td style="text-align:right;font-weight:600">${fmt(t.balanceAfter)}</td>
+      <td style="color:#888;font-size:12px">${t.note||'—'}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="delLoanTx('${t.id}')" style="padding:0;width:28px;text-align:center">✕</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+function renderLoanUI(){ renderLoanChips(); renderActionArea(); renderLoanSummary(); renderLoanHistory(); }
+
+// ── 初始化 ──
+document.getElementById('tx-date').value = new Date().toISOString().slice(0,10);
+if(S.income) document.getElementById('income-input').value = S.income;
+renderAlloc('daily'); renderAlloc('project'); updateSummary();
+refreshCatSelect(); renderTxs();
+renderLoanUI();
+</script>
+</body>
+</html>
